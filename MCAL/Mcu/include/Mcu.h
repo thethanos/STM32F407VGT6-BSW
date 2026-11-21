@@ -11,6 +11,7 @@
 #define MCU_GETPLLSTATUS_SID        ((uint8)0x04)
 #define MCU_GETRESETREASON_SID      ((uint8)0x05)
 #define MCU_GETRESETRAWVALUE_SID    ((uint8)0x06)
+#define MCU_PERFORMRESET_SID        ((uint8)0x07)
 
 #define MCU_E_PARAM_CONFIG      ((uint8)0x0A)
 #define MCU_E_PARAM_CLOCK       ((uint8)0x0B)
@@ -93,5 +94,9 @@ Std_ReturnType Mcu_DistributePllClock(void);
 Mcu_RawResetType Mcu_GetResetRawValue(void);
 Mcu_ResetType Mcu_GetResetReason(void);
 Std_ReturnType Mcu_InitRamSection(Mcu_RamSectionType RamSection);
+
+#if (MCU_PERFORM_RESET_API == STD_ON)
+void Mcu_PerformReset(void);
+#endif
 
 #endif // MCU_H

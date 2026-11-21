@@ -94,12 +94,12 @@ static Std_ReturnType Mcu_EncodePpre2(uint32 divider, uint32* code) {
 
 
 void Mcu_Init(const Mcu_ConfigType* ConfigPtr) {
-#if (MCU_DEV_ERROR_DETECT == STD_ON)
     if (ConfigPtr == NULL_PTR) {
+#if (MCU_DEV_ERROR_DETECT == STD_ON)
         Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_INIT_SID, MCU_E_INIT_FAILED);
+#endif
         return;
     }
-#endif
 
     Mcu_ResetReason = RCC->CSR;
     RCC->CSR |= RCC_CSR_RMVF;
@@ -110,12 +110,13 @@ void Mcu_Init(const Mcu_ConfigType* ConfigPtr) {
 
 Std_ReturnType Mcu_InitClock(Mcu_ClockType ClockSetting) {
     Mcu_ClockStarted = FALSE;
-#if (MCU_DEV_ERROR_DETECT == STD_ON)
+
     if (Mcu_Status != MCU_INITIALIZED) {
+#if (MCU_DEV_ERROR_DETECT == STD_ON)
         Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_INITCLOCK_SID, MCU_E_UNINIT);
+#endif
         return E_NOT_OK;
     }
-#endif
 
     const Mcu_ClockSettingConfigType* cfg = NULL_PTR;
     for (uint8 index = 0; index < Mcu_ConfigPtr->NumClockSettings; index++) {
@@ -207,12 +208,12 @@ Std_ReturnType Mcu_InitClock(Mcu_ClockType ClockSetting) {
 }
 
 Mcu_PllStatusType Mcu_GetPllStatus(void) {
-#if (MCU_DEV_ERROR_DETECT == STD_ON)
     if (Mcu_Status == MCU_UNINIT) {
+#if (MCU_DEV_ERROR_DETECT == STD_ON)
         (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_GETPLLSTATUS_SID, MCU_E_UNINIT);
+#endif
         return MCU_PLL_STATUS_UNDEFINED;
     }
-#endif
 
     if ((RCC->CR & RCC_CR_PLLRDY) == 0U) {
         return MCU_PLL_UNLOCKED;
@@ -222,17 +223,19 @@ Mcu_PllStatusType Mcu_GetPllStatus(void) {
 }
 
 Std_ReturnType Mcu_DistributePllClock(void) {
-#if (MCU_DEV_ERROR_DETECT == STD_ON)
     if (Mcu_Status == MCU_UNINIT) {
+#if (MCU_DEV_ERROR_DETECT == STD_ON)
         (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_DISTRIBUTEPLLCLOCK_SID, MCU_E_UNINIT);
+#endif
         return E_NOT_OK;
     }
 
     if (Mcu_GetPllStatus() != MCU_PLL_LOCKED) {
+#if (MCU_DEV_ERROR_DETECT == STD_ON)
         (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_DISTRIBUTEPLLCLOCK_SID, MCU_E_PLL_NOT_LOCKED);
+#endif
         return E_NOT_OK;
     }
-#endif
 
     RCC->CFGR = ((RCC->CFGR & ~RCC_CFGR_SW) | RCC_CFGR_SW_PLL);
 
@@ -240,12 +243,12 @@ Std_ReturnType Mcu_DistributePllClock(void) {
 }
 
 Mcu_RawResetType Mcu_GetResetRawValue(void) {
-#if (MCU_DEV_ERROR_DETECT == STD_ON)
     if (Mcu_Status == MCU_UNINIT) {
+#if (MCU_DEV_ERROR_DETECT == STD_ON)
         (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_GETRESETRAWVALUE_SID, MCU_E_UNINIT);
+#endif
         return MCU_RESET_RAW_UNDEFINED;
     }
-#endif
 
     const uint32 reset_mask = RCC_CSR_BORRSTF  | RCC_CSR_PINRSTF  | 
                               RCC_CSR_PORRSTF  | RCC_CSR_SFTRSTF  |
@@ -256,12 +259,12 @@ Mcu_RawResetType Mcu_GetResetRawValue(void) {
 }
 
 Mcu_ResetType Mcu_GetResetReason(void) {
-#if (MCU_DEV_ERROR_DETECT == STD_ON)
     if (Mcu_Status == MCU_UNINIT) {
+#if (MCU_DEV_ERROR_DETECT == STD_ON)
         (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_GETRESETREASON_SID, MCU_E_UNINIT);
+#endif
         return MCU_RESET_UNDEFINED;
     }
-#endif
 
     if ((Mcu_ResetReason & (RCC_CSR_PORRSTF | RCC_CSR_BORRSTF)) != 0U) {
         return MCU_POWER_ON_RESET;
@@ -313,3 +316,16 @@ Std_ReturnType Mcu_InitRamSection(Mcu_RamSectionType RamSection) {
     
     return E_OK;
 }
+
+#if (MCU_PERFORM_RESET_API == STD_ON)
+void Mcu_PerformReset(void) {
+    if (Mcu_Status == MCU_UNINIT) {
+#if (MCU_DEV_ERROR_DETECT == STD_ON)
+        (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_PERFORMRESET_SID, MCU_E_UNINIT);
+        return;
+#endif
+    }
+
+    NVIC_SystemReset();
+}
+#endif
