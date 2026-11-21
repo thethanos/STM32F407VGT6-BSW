@@ -6,6 +6,8 @@
 #include "stm32f407xx.h"
 #include "Mcu_Cfg.h"
 
+#include <string.h>
+
 #define MCU_UNINIT       0U
 #define MCU_INITIALIZED  1U
 #define MCU_RESET_RAW_UNDEFINED     0xFFFFFFFFU
@@ -52,81 +54,40 @@ static Std_ReturnType Mcu_WaitEqual(volatile uint32* reg, uint32 mask, uint32 ex
 
 static Std_ReturnType Mcu_EncodeHpre(uint32 divider, uint32* code) {
     switch (divider) {
-        case 1U:
-            *code = RCC_CFGR_HPRE_DIV1;
-            break;
-        case 2U:
-            *code = RCC_CFGR_HPRE_DIV2;  
-            break; 
-        case 4U:
-            *code = RCC_CFGR_HPRE_DIV4;
-            break;
-        case 8U:
-            *code = RCC_CFGR_HPRE_DIV8;
-            break;   
-        case 16U:
-            *code = RCC_CFGR_HPRE_DIV16;
-            break;
-        case 64U:
-            *code = RCC_CFGR_HPRE_DIV64;  
-            break; 
-        case 128U:
-            *code = RCC_CFGR_HPRE_DIV128;
-            break;
-        case 256U:
-            *code = RCC_CFGR_HPRE_DIV256;
-            break;
-        case 512U:
-            *code = RCC_CFGR_HPRE_DIV512;
-            break;
-        default:
-            return E_NOT_OK;   
+        case 1U: *code = RCC_CFGR_HPRE_DIV1; break;
+        case 2U: *code = RCC_CFGR_HPRE_DIV2; break; 
+        case 4U: *code = RCC_CFGR_HPRE_DIV4; break;
+        case 8U: *code = RCC_CFGR_HPRE_DIV8; break;   
+        case 16U: *code = RCC_CFGR_HPRE_DIV16; break;
+        case 64U: *code = RCC_CFGR_HPRE_DIV64; break; 
+        case 128U: *code = RCC_CFGR_HPRE_DIV128; break;
+        case 256U: *code = RCC_CFGR_HPRE_DIV256; break;
+        case 512U: *code = RCC_CFGR_HPRE_DIV512; break;
+        default: return E_NOT_OK;   
     }
     return E_OK;
 }
 
 static Std_ReturnType Mcu_EncodePpre1(uint32 divider, uint32* code) {
     switch (divider) {
-        case 1U:
-            *code = RCC_CFGR_PPRE1_DIV1;
-            break;
-        case 2U:
-            *code = RCC_CFGR_PPRE1_DIV2;  
-            break; 
-        case 4U:
-            *code = RCC_CFGR_PPRE1_DIV4;
-            break;
-        case 8U:
-            *code = RCC_CFGR_PPRE1_DIV8;
-            break;   
-        case 16U:
-            *code = RCC_CFGR_PPRE1_DIV16;
-            break;
-        default:
-            return E_NOT_OK;
+        case 1U: *code = RCC_CFGR_PPRE1_DIV1; break;
+        case 2U: *code = RCC_CFGR_PPRE1_DIV2; break; 
+        case 4U: *code = RCC_CFGR_PPRE1_DIV4; break;
+        case 8U: *code = RCC_CFGR_PPRE1_DIV8; break;   
+        case 16U: *code = RCC_CFGR_PPRE1_DIV16; break;
+        default: return E_NOT_OK;
     }
     return E_OK;
 }
 
 static Std_ReturnType Mcu_EncodePpre2(uint32 divider, uint32* code) {
     switch (divider) {
-        case 1U:
-            *code = RCC_CFGR_PPRE2_DIV1;
-            break;
-        case 2U:
-            *code = RCC_CFGR_PPRE2_DIV2;  
-            break; 
-        case 4U:
-            *code = RCC_CFGR_PPRE2_DIV4;
-            break;
-        case 8U:
-            *code = RCC_CFGR_PPRE2_DIV8;
-            break;   
-        case 16U:
-            *code = RCC_CFGR_PPRE2_DIV16;
-            break;
-        default:
-            return E_NOT_OK;
+        case 1U: *code = RCC_CFGR_PPRE2_DIV1; break;
+        case 2U: *code = RCC_CFGR_PPRE2_DIV2; break; 
+        case 4U: *code = RCC_CFGR_PPRE2_DIV4; break;
+        case 8U: *code = RCC_CFGR_PPRE2_DIV8; break;   
+        case 16U: *code = RCC_CFGR_PPRE2_DIV16; break;
+        default: return E_NOT_OK;
     }
     return E_OK;
 }
@@ -135,7 +96,7 @@ static Std_ReturnType Mcu_EncodePpre2(uint32 divider, uint32* code) {
 void Mcu_Init(const Mcu_ConfigType* ConfigPtr) {
 #if (MCU_DEV_ERROR_DETECT == STD_ON)
     if (ConfigPtr == NULL_PTR) {
-        Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_INIT_SID, MCU_E_PARAM_POINTER);
+        Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_INIT_SID, MCU_E_INIT_FAILED);
         return;
     }
 #endif
@@ -151,7 +112,7 @@ Std_ReturnType Mcu_InitClock(Mcu_ClockType ClockSetting) {
     Mcu_ClockStarted = FALSE;
 #if (MCU_DEV_ERROR_DETECT == STD_ON)
     if (Mcu_Status != MCU_INITIALIZED) {
-        Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_INITCLOCK_SID, MCU_E_PARAM_UNINIT);
+        Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_INITCLOCK_SID, MCU_E_UNINIT);
         return E_NOT_OK;
     }
 #endif
@@ -248,7 +209,7 @@ Std_ReturnType Mcu_InitClock(Mcu_ClockType ClockSetting) {
 Mcu_PllStatusType Mcu_GetPllStatus(void) {
 #if (MCU_DEV_ERROR_DETECT == STD_ON)
     if (Mcu_Status == MCU_UNINIT) {
-        (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_GETPLLSTATUS_SID, MCU_E_PARAM_UNINIT);
+        (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_GETPLLSTATUS_SID, MCU_E_UNINIT);
         return MCU_PLL_STATUS_UNDEFINED;
     }
 #endif
@@ -263,7 +224,7 @@ Mcu_PllStatusType Mcu_GetPllStatus(void) {
 Std_ReturnType Mcu_DistributePllClock(void) {
 #if (MCU_DEV_ERROR_DETECT == STD_ON)
     if (Mcu_Status == MCU_UNINIT) {
-        (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_DISTRIBUTEPLLCLOCK_SID, MCU_E_PARAM_UNINIT);
+        (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_DISTRIBUTEPLLCLOCK_SID, MCU_E_UNINIT);
         return E_NOT_OK;
     }
 
@@ -281,7 +242,7 @@ Std_ReturnType Mcu_DistributePllClock(void) {
 Mcu_RawResetType Mcu_GetResetRawValue(void) {
 #if (MCU_DEV_ERROR_DETECT == STD_ON)
     if (Mcu_Status == MCU_UNINIT) {
-        (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_GETRESETRAWVALUE_SID, MCU_E_PARAM_UNINIT);
+        (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_GETRESETRAWVALUE_SID, MCU_E_UNINIT);
         return MCU_RESET_RAW_UNDEFINED;
     }
 #endif
@@ -297,8 +258,8 @@ Mcu_RawResetType Mcu_GetResetRawValue(void) {
 Mcu_ResetType Mcu_GetResetReason(void) {
 #if (MCU_DEV_ERROR_DETECT == STD_ON)
     if (Mcu_Status == MCU_UNINIT) {
-        (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_GETRESETREASON_SID, MCU_E_PARAM_UNINIT);
-        return MCU_UNDEFINED_RESET;
+        (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_GETRESETREASON_SID, MCU_E_UNINIT);
+        return MCU_RESET_UNDEFINED;
     }
 #endif
 
@@ -315,8 +276,40 @@ Mcu_ResetType Mcu_GetResetReason(void) {
     }
 
     if ((Mcu_ResetReason & RCC_CSR_PINRSTF) != 0U) {
-        return MCU_UNDEFINED_RESET;
+        return MCU_RESET_UNDEFINED;
     }
 
-    return MCU_UNDEFINED_RESET;
+    return MCU_RESET_UNDEFINED;
+}
+
+Std_ReturnType Mcu_InitRamSection(Mcu_RamSectionType RamSection) {
+    if (Mcu_Status == MCU_UNINIT) {
+#if (MCU_DEV_ERROR_DETECT == STD_ON) 
+        (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_INITRAMSECTION_SID, MCU_E_UNINIT);
+#endif
+        return E_NOT_OK;
+    }
+
+    if (RamSection >= Mcu_ConfigPtr->NumRamSectorSettings) {
+#if (MCU_DEV_ERROR_DETECT == STD_ON) 
+        (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_INITRAMSECTION_SID, MCU_E_PARAM_RAMSECTION);
+#endif
+        return E_NOT_OK;
+    }
+
+    const Mcu_RamSectorSettingConfigType* sec = &Mcu_ConfigPtr->RamSectorSettings[RamSection];
+    uint32 pattern = 0;
+    uint32 blocks = sec->RamSizeBytes / sec->WriteSize;
+    (void)memset(&pattern, (int)sec->DefaultValue, sizeof(pattern));
+
+    for (uint32 index = 0U; index < blocks; index++) {
+        switch (sec->WriteSize) {
+            case 1U: ((volatile uint8*)sec->RamBaseAddress)[index] = (uint8)pattern; break;
+            case 2U: ((volatile uint16*)sec->RamBaseAddress)[index] = (uint16)pattern; break;
+            case 4U: ((volatile uint32*)sec->RamBaseAddress)[index] = (uint32)pattern; break;
+            default: return E_NOT_OK;
+        }
+    }
+    
+    return E_OK;
 }

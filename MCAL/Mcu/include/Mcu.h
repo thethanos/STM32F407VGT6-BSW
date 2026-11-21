@@ -5,6 +5,7 @@
 #include "Mcu_Cfg.h"
 
 #define MCU_INIT_SID                ((uint8)0x00)
+#define MCU_INITRAMSECTION_SID      ((uint8)0x01)
 #define MCU_INITCLOCK_SID           ((uint8)0x02)
 #define MCU_DISTRIBUTEPLLCLOCK_SID  ((uint8)0x03)
 #define MCU_GETPLLSTATUS_SID        ((uint8)0x04)
@@ -13,9 +14,12 @@
 
 #define MCU_E_PARAM_CONFIG      ((uint8)0x0A)
 #define MCU_E_PARAM_CLOCK       ((uint8)0x0B)
-#define MCU_E_PARAM_UNINIT      ((uint8)0x0f)
-#define MCU_E_PARAM_POINTER     ((uint8)0x10)
+#define MCU_E_PARAM_MODE        ((uint8)0x0C)
+#define MCU_E_PARAM_RAMSECTION  ((uint8)0x0D)
 #define MCU_E_PLL_NOT_LOCKED    ((uint8)0x0E)
+#define MCU_E_UNINIT            ((uint8)0x0F)
+#define MCU_E_PARAM_POINTER     ((uint8)0x10)
+#define MCU_E_INIT_FAILED       ((uint8)0x11)
 
 typedef uint8 Mcu_ClockType;
 
@@ -77,8 +81,10 @@ typedef enum {
     MCU_POWER_ON_RESET = 0U,
     MCU_WATCHDOG_RESET,
     MCU_SW_RESET,
-    MCU_UNDEFINED_RESET
+    MCU_RESET_UNDEFINED
 } Mcu_ResetType;
+
+typedef uint8 Mcu_RamSectionType;
 
 void Mcu_Init(const Mcu_ConfigType* ConfigPtr);
 Std_ReturnType Mcu_InitClock(Mcu_ClockType ClockSetting);
@@ -86,5 +92,6 @@ Mcu_PllStatusType Mcu_GetPllStatus(void);
 Std_ReturnType Mcu_DistributePllClock(void);
 Mcu_RawResetType Mcu_GetResetRawValue(void);
 Mcu_ResetType Mcu_GetResetReason(void);
+Std_ReturnType Mcu_InitRamSection(Mcu_RamSectionType RamSection);
 
 #endif // MCU_H

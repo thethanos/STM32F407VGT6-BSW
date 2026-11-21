@@ -14,7 +14,7 @@
 
 #define MCU_VARIANT_POST_BUILD              STD_ON
 
-#define MCU_DEV_ERROR_DETECT               STD_OFF
+#define MCU_DEV_ERROR_DETECT               STD_ON
 
 #define MCU_INIT_RAM_API                   STD_OFF
 #define MCU_INIT_CLOCK_API                 STD_ON
