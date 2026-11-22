@@ -104,10 +104,16 @@ void Mcu_Init(const Mcu_ConfigType* ConfigPtr) {
     Mcu_ResetReason = RCC->CSR;
     RCC->CSR |= RCC_CSR_RMVF;
 
+    RCC->APB1ENR |= RCC_APB1ENR_PWREN;
+    (void)RCC->APB1ENR;
+
+    PWR->CR = (PWR->CR & ~PWR_CR_VOS) | (ConfigPtr->PwrControlInit & PWR_CR_VOS);
+
     Mcu_ConfigPtr = ConfigPtr;
     Mcu_Status    = MCU_INITIALIZED;
 }
 
+#if (MCU_INIT_CLOCK == STD_ON)
 Std_ReturnType Mcu_InitClock(Mcu_ClockType ClockSetting) {
     Mcu_ClockStarted = FALSE;
 
@@ -164,11 +170,6 @@ Std_ReturnType Mcu_InitClock(Mcu_ClockType ClockSetting) {
     pllcfgr |= ((pllp_encoded << RCC_PLLCFGR_PLLP_Pos) & RCC_PLLCFGR_PLLP_Msk);
     pllcfgr |= ((cfg->PllQ << RCC_PLLCFGR_PLLQ_Pos) & RCC_PLLCFGR_PLLQ_Msk);
 
-    RCC->APB1ENR |= RCC_APB1ENR_PWREN;
-    (void)RCC->APB1ENR;
-
-    PWR->CR |= PWR_CR_VOS;
-
     if ((RCC->CFGR & RCC_CFGR_SWS) == RCC_CFGR_SWS_PLL) {
         RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW) | RCC_CFGR_SW_HSI;
         if (Mcu_WaitEqual(&RCC->CFGR, RCC_CFGR_SWS, RCC_CFGR_SWS_HSI, CLOCK_SOURCE_SWITCH_TIMEOUT) != E_OK) {
@@ -206,6 +207,7 @@ Std_ReturnType Mcu_InitClock(Mcu_ClockType ClockSetting) {
     Mcu_ClockStarted = TRUE;
     return E_OK;
 }
+#endif
 
 Mcu_PllStatusType Mcu_GetPllStatus(void) {
     if (Mcu_Status == MCU_UNINIT) {
@@ -222,6 +224,7 @@ Mcu_PllStatusType Mcu_GetPllStatus(void) {
     return MCU_PLL_LOCKED;
 }
 
+#if (MCU_NO_PLL == STD_OFF)
 Std_ReturnType Mcu_DistributePllClock(void) {
     if (Mcu_Status == MCU_UNINIT) {
 #if (MCU_DEV_ERROR_DETECT == STD_ON)
@@ -241,6 +244,7 @@ Std_ReturnType Mcu_DistributePllClock(void) {
 
     return Mcu_WaitEqual(&RCC->CFGR, RCC_CFGR_SWS, RCC_CFGR_SWS_PLL, CLOCK_SOURCE_SWITCH_TIMEOUT);
 }
+#endif
 
 Mcu_RawResetType Mcu_GetResetRawValue(void) {
     if (Mcu_Status == MCU_UNINIT) {
@@ -322,10 +326,88 @@ void Mcu_PerformReset(void) {
     if (Mcu_Status == MCU_UNINIT) {
 #if (MCU_DEV_ERROR_DETECT == STD_ON)
         (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_PERFORMRESET_SID, MCU_E_UNINIT);
-        return;
 #endif
+        return;
     }
 
     NVIC_SystemReset();
+}
+#endif
+
+void Mcu_SetMode(Mcu_ModeType McuMode) {
+    if (Mcu_Status == MCU_UNINIT) {
+#if (MCU_DEV_ERROR_DETECT == STD_ON)
+        (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_SETMODE_SID, MCU_E_UNINIT);
+#endif
+        return;
+    }
+
+    const Mcu_ModeSettingConfigType* cfg = NULL_PTR;
+    for (uint8 index = 0U; index < Mcu_ConfigPtr->NumModeSettings; index++) {
+        if (Mcu_ConfigPtr->ModeSettings[index].ModeId == McuMode) {
+            cfg = &Mcu_ConfigPtr->ModeSettings[index];
+            break;
+        }
+    }
+
+    if (cfg == NULL_PTR) {
+#if (MCU_DEV_ERROR_DETECT == STD_ON)
+        (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_SETMODE_SID, MCU_E_PARAM_MODE);
+#endif
+        return;
+    }
+
+    const uint32 lp_bits = PWR_CR_PDDS | PWR_CR_LPDS | PWR_CR_FPDS;
+    switch (cfg->PowerMode) {
+        case MCU_RUN:
+            PWR->CR &= ~lp_bits;
+            SCB->SCR &= ~(SCB_SCR_SLEEPDEEP_Msk | SCB_SCR_SLEEPONEXIT_Msk);
+            return;
+        case MCU_SLEEP:
+            SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
+            break;
+        case MCU_STOP:
+            PWR->CR = (PWR->CR & ~lp_bits) | (cfg->PwrControlMask & (PWR_CR_LPDS | PWR_CR_FPDS));
+            SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+            break;
+        case MCU_STANDBY:
+            PWR->CR |= PWR_CR_CWUF;
+            PWR->CR = (PWR->CR & ~lp_bits) | PWR_CR_PDDS;
+            SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+            break;
+        default:
+#if (MCU_DEV_ERROR_DETECT == STD_ON)
+            (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_SETMODE_SID, MCU_E_PARAM_MODE);
+#endif
+            return;
+    }
+
+    if (cfg->SleepOnExit == TRUE) {
+        SCB->SCR |= SCB_SCR_SLEEPONEXIT_Msk;
+    } else {
+        SCB->SCR &= ~SCB_SCR_SLEEPONEXIT_Msk;
+    }
+
+    __DSB();
+    __WFI();
+    __ISB();
+
+    SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
+}
+
+#if (MCU_VERSION_INFO_API == STD_ON)
+void Mcu_GetVersionInfo(Std_VersionInfoType* versioninfo) {
+    if (versioninfo == NULL_PTR) {
+#if (MCU_DEV_ERROR_DETECT == STD_ON)
+        (void)Det_ReportError(MCU_MODULE_ID, MCU_INSTANCE_ID, MCU_GETVERSIONINFO_SID, MCU_E_PARAM_POINTER);
+#endif
+        return;
+    }
+
+    versioninfo->vendorID = MCU_VENDOR_ID;
+    versioninfo->moduleID = MCU_MODULE_ID;
+    versioninfo->sw_major_version = MCU_SW_MAJOR_VERSION;
+    versioninfo->sw_minor_version = MCU_SW_MINOR_VERSION;
+    versioninfo->sw_patch_version = MCU_SW_PATCH_VERSION;
 }
 #endif

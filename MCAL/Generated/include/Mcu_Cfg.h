@@ -14,15 +14,13 @@
 
 #define MCU_VARIANT_POST_BUILD              STD_ON
 
-#define MCU_DEV_ERROR_DETECT               STD_ON
+#define MCU_DEV_ERROR_DETECT                STD_ON
 
-#define MCU_INIT_RAM_API                   STD_OFF
-#define MCU_INIT_CLOCK_API                 STD_ON
-#define MCU_DISTRIBUTE_PLL_CLOCK_API       STD_ON
-#define MCU_PERFORM_RESET_API              STD_ON
-#define MCU_SET_MODE_API                   STD_ON
-#define MCU_VERSION_INFO_API               STD_ON
-#define MCU_GET_RAM_STATE_API              STD_OFF
+#define MCU_INIT_CLOCK                      STD_ON
+#define MCU_NO_PLL                          STD_OFF
+#define MCU_PERFORM_RESET_API               STD_ON
+#define MCU_VERSION_INFO_API                STD_ON
+#define MCU_GET_RAM_STATE_API               STD_OFF
 
 
 /* ============================================================================
