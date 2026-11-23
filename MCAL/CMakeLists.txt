@@ -23,5 +23,3 @@ target_link_libraries(mcal
     PUBLIC common mcal_generated services
     PRIVATE stm32cubemx
 )
-
-target_link_libraries(mcal_generated PRIVATE mcal)
