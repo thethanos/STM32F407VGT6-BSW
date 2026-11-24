@@ -1,51 +1,55 @@
 #include "Port.h"
+#include "Port_Cfg.h"
+#include "Det.h"
+#include "Std_Types.h"
 #include "stm32f4xx.h"
 
-#include <stddef.h>
+#define PORT_GPIO_IDX(id)   ((uint32)(id) >> 4U)
 
-#define GET_GPIO_PORT(pin)  ((GPIO_TypeDef*)(GPIOA_BASE + (0x0400U * ((pin) / 16U))))
-#define GET_GPIO_PIN(pin)   ((pin) % 16U)
+static boolean Port_Initialized = FALSE;
+static const Port_ConfigType* Port_ConfigPtr = NULL_PTR;
+
+static boolean Port_IsConfigValid(const Port_ConfigType* ConfigPtr) {
+    return TRUE;
+}
+
+static void Port_ConfigurePin(const Port_PinConfigType* Pin) {
+    //GPIO_TypeDef* const gpio = 
+}
 
 void Port_Init(const Port_ConfigType *ConfigPtr) {
-    if (ConfigPtr == NULL || ConfigPtr->Pins == NULL) {
+    uint32 clockMask = 0;
+
+    if (ConfigPtr == NULL_PTR) {
+#if (PORT_DEV_ERROR_DETECT == STD_ON)
+        (void) Det_ReportError(PORT_MODULE_ID, PORT_INSTANCE_ID, PORT_INIT_SID, PORT_E_INIT_FAILED);
+#endif 
         return;
     }
 
-    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN | RCC_AHB1ENR_GPIOBEN |
-                    RCC_AHB1ENR_GPIOCEN | RCC_AHB1ENR_GPIODEN | 
-                    RCC_AHB1ENR_GPIOEEN;
-
-    for (uint16_t i = 0U; i < ConfigPtr->NumberOfPins; i++) {
-        const Port_PinConfigType* pinCfg = &ConfigPtr->Pins[i];
-
-        GPIO_TypeDef* port = GET_GPIO_PORT(pinCfg->PinID);
-        uint8_t pin = GET_GPIO_PIN(pinCfg->PinID);
-
-        if (pinCfg->Direction == PORT_PIN_OUT) {
-            if (pinCfg->InitialLevel == STD_HIGH) {
-                port->BSRR = (1U << pin);
-            } else {
-                port->BSRR = (1U << (pin + 16U));
-            }
-        }
-
-        port->MODER &= ~(0x03U << (pin * 2U));
-        port->MODER |= ((uint32_t)pinCfg->Mode << (pin * 2U));
-
-        port->OTYPER &= ~(0x01U << pin);
-        port->OTYPER |= ((uint32_t)pinCfg->OutputType << pin);
-
-        port->OSPEEDR &= ~(0x03U << (pin * 2U));
-        port->OSPEEDR |= ((uint32_t)pinCfg->Speed << (pin * 2U));
-
-        port->PUPDR &= ~(0x03U << (pin * 2U));
-        port->PUPDR |= ((uint32_t)pinCfg->PullResistor << (pin * 2U));
-
-        if (pinCfg->Mode == 2U) {
-            uint8_t afrIndex = pin / 8U;
-            uint8_t afrShift = (pin % 8U) * 4U;
-            port->AFR[afrIndex] &= ~(0x0FU << afrShift);
-            port->AFR[afrIndex] |= ((uint32_t)pinCfg->AlternateFunc << afrShift);
-        }
+    if (Port_IsConfigValid(ConfigPtr) == FALSE) {
+#if (PORT_DEV_ERROR_DETECT == STD_ON)
+        (void) Det_ReportError(PORT_MODULE_ID, PORT_INSTANCE_ID, PORT_INIT_SID, PORT_E_INIT_FAILED);
+#endif
+        return;
     }
+
+    for (uint16 index = 0U; index < ConfigPtr->NumberOfPortPins; index++) {
+        clockMask |= (1UL << PORT_GPIO_IDX(ConfigPtr->Pins[index].PinId));
+    }
+
+    // enter critical section tbd
+    RCC->AHB1ENR |= clockMask;
+    (void)RCC->AHB1ENR;
+
+    // exit critical sectiob tbd
+
+    for (uint16 index = 0U; index < ConfigPtr->NumberOfPortPins; index++) {
+        // enter critical section tbd
+        Port_ConfigurePin(&ConfigPtr->Pins[index]);
+        // exit critical section tbd
+    }
+
+    Port_ConfigPtr = ConfigPtr;
+    Port_Initialized = TRUE;
 }

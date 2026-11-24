@@ -17,7 +17,10 @@ typedef uint32_t uint32;
 #ifndef STATUSTYPES_DEFINED
 #define STATUSTYPES_DEFINED
 
-#define NULL_PTR (void*)0
+#define STD_ON                                  (0x01U)
+#define STD_OFF                                 (0x00U)
+
+#define NULL_PTR                                (void*)0
 
 #define E_OK                                    ((Std_ReturnType)0x00U)
 #define E_NOT_OK                                ((Std_ReturnType)0x01U)
