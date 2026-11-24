@@ -1,10 +1,19 @@
 #include "Port.h"
 #include "Port_Cfg.h"
 #include "Det.h"
+#include "Port_PBcfg.h"
 #include "Std_Types.h"
 #include "stm32f4xx.h"
 
+#define PORT_GPIO_COUNT     8U
 #define PORT_GPIO_IDX(id)   ((uint32)(id) >> 4U)
+#define PORT_PIN_IDX(id)    ((uint32)(id) & 0x0FU)
+#define PORT_GPIO(idx)      ((GPIO_TypeDef*)(GPIOA_BASE + ((idx) * (GPIOB_BASE - GPIOA_BASE))))
+
+#define PORT_MODER_INPUT    0U
+#define PORT_MODER_OUTPUT   1U
+#define PORT_MODER_AF       2U
+#define PORT_MODER_ANALOG   3U
 
 static boolean Port_Initialized = FALSE;
 static const Port_ConfigType* Port_ConfigPtr = NULL_PTR;
@@ -14,7 +23,35 @@ static boolean Port_IsConfigValid(const Port_ConfigType* ConfigPtr) {
 }
 
 static void Port_ConfigurePin(const Port_PinConfigType* Pin) {
-    //GPIO_TypeDef* const gpio = 
+    GPIO_TypeDef* const gpio = PORT_GPIO(PORT_GPIO_IDX(Pin->PinId));
+    const uint32 pin = PORT_PIN_IDX(Pin->PinId);
+    const uint32 pos2 = pin * 2U;
+    uint32 moder = 0;
+
+    switch (Pin->InitialMode) {
+        case PORT_PIN_MODE_DIO:
+            if (Pin->Direction == PORT_PIN_OUT) {
+                gpio->BSRR = (Pin->LevelValue == PORT_PIN_LEVEL_HIGH) ? (1UL << pin) : (1UL << (pin + 16U));
+                moder = PORT_MODER_OUTPUT;
+            } else {
+                moder = PORT_MODER_INPUT;
+            }
+            break;
+        case PORT_PIN_MODE_ANALOG:
+            moder = PORT_MODER_ANALOG;
+            break;
+        default:
+            const uint32 afrIdx = pin >> 3U;
+            const uint32 afrPos = (pin & 0x07U) * 4U;
+            gpio->AFR[afrIdx] = (gpio->AFR[afrIdx] & ~(0x0FUL << afrPos)) |
+                                ((uint32)(Pin->InitialMode & 0x0FU) << afrPos);
+            moder = PORT_MODER_AF;
+    }
+
+    gpio->OTYPER  = (gpio->OTYPER  & ~(0x01UL << pin))  | ((uint32)Pin->OutputType << pin);
+    gpio->OSPEEDR = (gpio->OSPEEDR & ~(0x03UL << pos2)) | ((uint32)Pin->Speed << pos2);
+    gpio->PUPDR   = (gpio->PUPDR   & ~(0x03UL << pos2)) | ((uint32)Pin->Pull << pos2);
+    gpio->MODER   = (gpio->MODER   & ~(0x03UL << pos2)) | (moder << pos2);
 }
 
 void Port_Init(const Port_ConfigType *ConfigPtr) {
