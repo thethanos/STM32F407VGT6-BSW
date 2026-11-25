@@ -4,6 +4,7 @@
 #include "Port_PBcfg.h"
 #include "Std_Types.h"
 #include "stm32f4xx.h"
+#include <stdint.h>
 
 #define PORT_GPIO_COUNT     8U
 #define PORT_GPIO_IDX(id)   ((uint32)(id) >> 4U)
@@ -89,4 +90,33 @@ void Port_Init(const Port_ConfigType *ConfigPtr) {
 
     Port_ConfigPtr = ConfigPtr;
     Port_Initialized = TRUE;
+}
+
+void Port_RefreshPortDirection(void) {
+    if (Port_Initialized == FALSE) {
+#if (PORT_DEV_ERROR_DETECT == STD_ON)
+        (void)Det_ReportError(PORT_MODULE_ID, PORT_INSTANCE_ID, PORT_REFRESHPORTDIRECTION_SID, PORT_E_UNINIT);
+#endif
+        return;
+    }
+
+    for (uint16 index = 0U; index < Port_ConfigPtr->NumberOfPortPins; index++) {
+        const Port_PinConfigType* const cfg = &Port_ConfigPtr->Pins[index];
+
+        if (cfg->DirectionChangeable == TRUE) {
+            continue;
+        }
+
+        GPIO_TypeDef* const gpio = PORT_GPIO(PORT_GPIO_IDX(cfg->PinId));
+        const uint32 pos2 = PORT_PIN_IDX(cfg->PinId) * 2U;
+        const uint32 mask = 0x03UL << pos2;
+        const uint32 moder = (cfg->Direction == PORT_PIN_OUT) ? PORT_MODER_OUTPUT : PORT_MODER_INPUT;
+
+        // enter ctitical section
+        const uint32 current = (gpio->MODER & mask) >> pos2;
+        if ((current == PORT_MODER_INPUT) || (current == PORT_MODER_OUTPUT)) {
+            gpio->MODER = (gpio->MODER & ~mask) | (moder << pos2);
+        }
+        // exit critical section
+    }
 }

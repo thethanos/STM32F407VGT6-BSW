@@ -1,7 +1,6 @@
 #include "Dio.h"
 #include "Std_Types.h"
 #include "stm32f407xx.h"
-#include "stm32f4xx.h"
 #include <stdint.h>
 
 #define DIO_GET_PORT_ADDR(PortID)   ((GPIO_TypeDef*)(GPIOA_BASE + (0x0400U * (PortID))))

@@ -41,6 +41,7 @@ typedef struct {
     Port_PinType            PinId;
     Port_PinModeType        InitialMode;
     Port_PinDirectionType   Direction;
+    boolean                 DirectionChangeable;
     Port_PinLevelType       LevelValue;
     Port_PinPullType        Pull;
     Port_PinOutputType      OutputType;
