@@ -1,15 +1,8 @@
 #include "Port.h"
 #include "Port_Cfg.h"
 #include "Det.h"
-#include "Port_PBcfg.h"
-#include "Std_Types.h"
-#include "stm32f4xx.h"
-#include <stdint.h>
+#include "Gpio_Hw.h"
 
-#define PORT_GPIO_COUNT     8U
-#define PORT_GPIO_IDX(id)   ((uint32)(id) >> 4U)
-#define PORT_PIN_IDX(id)    ((uint32)(id) & 0x0FU)
-#define PORT_GPIO(idx)      ((GPIO_TypeDef*)(GPIOA_BASE + ((idx) * (GPIOB_BASE - GPIOA_BASE))))
 
 #define PORT_MODER_INPUT    0U
 #define PORT_MODER_OUTPUT   1U
@@ -24,8 +17,8 @@ static boolean Port_IsConfigValid(const Port_ConfigType* ConfigPtr) {
 }
 
 static void Port_ConfigurePin(const Port_PinConfigType* Pin) {
-    GPIO_TypeDef* const gpio = PORT_GPIO(PORT_GPIO_IDX(Pin->PinId));
-    const uint32 pin = PORT_PIN_IDX(Pin->PinId);
+    GPIO_TypeDef* const gpio = GpioHw_Port(GpioHw_PortIdx(Pin->PinId));
+    const uint32 pin = GpioHw_PinIdx(Pin->PinId);
     const uint32 pos2 = pin * 2U;
     uint32 moder = 0;
 
@@ -73,7 +66,7 @@ void Port_Init(const Port_ConfigType *ConfigPtr) {
     }
 
     for (uint16 index = 0U; index < ConfigPtr->NumberOfPortPins; index++) {
-        clockMask |= (1UL << PORT_GPIO_IDX(ConfigPtr->Pins[index].PinId));
+        clockMask |= (1UL << GpioHw_PortIdx(ConfigPtr->Pins[index].PinId));
     }
 
     // enter critical section tbd
@@ -107,8 +100,8 @@ void Port_RefreshPortDirection(void) {
             continue;
         }
 
-        GPIO_TypeDef* const gpio = PORT_GPIO(PORT_GPIO_IDX(cfg->PinId));
-        const uint32 pos2 = PORT_PIN_IDX(cfg->PinId) * 2U;
+        GPIO_TypeDef* const gpio = GpioHw_Port(GpioHw_PortIdx(cfg->PinId));
+        const uint32 pos2 = GpioHw_PinIdx(cfg->PinId) * 2U;
         const uint32 mask = 0x03UL << pos2;
         const uint32 moder = (cfg->Direction == PORT_PIN_OUT) ? PORT_MODER_OUTPUT : PORT_MODER_INPUT;
 

@@ -1,27 +1,18 @@
 #ifndef DIO_H
 #define DIO_H
 
-#include "Std_Types.h"
+#include "Dio_PBcfg.h"
 
-typedef uint16_t    Dio_ChannelType;
-typedef uint8_t     Dio_PortType;
-typedef uint16_t    Dio_PortLevelType;
-typedef uint8_t     Dio_LevelType;
+#define DIO_READCHANNEL_SID             ((uint8)0x00)
+#define DIO_WRITECHANNEDL_SID           ((uint8)0x01)
 
-typedef struct {
-    uint16_t        Mask;
-    uint8_t         Offset;
-    Dio_PortType    Port;
-} Dio_ChannelGroupType;
+#define DIO_E_PARAM_INVALID_CHANNEL_ID  ((uint8)0x0A)
+#define DIO_E_PARAM_INVALID_PORT_ID     ((uint8)0x14)
 
 Dio_LevelType       Dio_ReadChannel(Dio_ChannelType ChannelID);
-
 void                Dio_WriteChannel(Dio_ChannelType ChannelID, Dio_LevelType Level);
-
 Dio_PortLevelType   Dio_ReadPort(Dio_PortType PortID);
-
 void                Dio_WritePort(Dio_PortType PortID, Dio_PortLevelType Level);
-
 Dio_LevelType       Dio_FlipChannel(Dio_ChannelType ChannelID);
 
 #endif // DIO_H

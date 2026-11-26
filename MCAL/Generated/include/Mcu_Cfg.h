@@ -1,8 +1,6 @@
 #ifndef MCU_CFG_H
 #define MCU_CFG_H
 
-#include <stdint.h>
-
 #include "Std_Types.h"
 
 #define MCU_MODULE_ID               ((uint16)101)

@@ -13,10 +13,13 @@ add_library(mcal STATIC
     Port/src/Port.c
 )
 
-target_include_directories(mcal PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/Mcu/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/Dio/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/Port/include
+target_include_directories(mcal 
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/Mcu/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/Dio/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/Port/include
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/Common/include
 )
 
 target_link_libraries(mcal 
